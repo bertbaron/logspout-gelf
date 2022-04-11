@@ -3,19 +3,30 @@ package gelf
 import (
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"log"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/Graylog2/go-gelf/gelf"
 	"github.com/gliderlabs/logspout/router"
+	"github.com/gliderlabs/logspout/cfg"
 )
 
 var hostname string
 
+func getHostname() string {
+	content, err := ioutil.ReadFile("/etc/host_hostname")
+	if err == nil && len(content) > 0 {
+		hostname = strings.TrimRight(string(content), "\r\n")
+	} else {
+		hostname = cfg.GetEnvDefault("SYSLOG_HOSTNAME", "{{.Container.Config.Hostname}}")
+	}
+	return hostname
+}
+
 func init() {
-	hostname, _ = os.Hostname()
+	hostname = getHostname()
 	router.AdapterFactories.Register(NewGelfAdapter, "gelf")
 }
 
